@@ -29,7 +29,7 @@ SOFTWARE.
 #include "Widgets/Layout/SSplitter.h"
 #include "SplitterSlot.generated.h"
 
-
+DECLARE_DYNAMIC_DELEGATE_RetVal(float, FOnGetSizeValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSplitterSlotResized, float, NewSize /*The new size coefficient of the slot*/);
 
 // /** How should a child's size be determined */
@@ -50,12 +50,22 @@ enum class ERealSizeRule:uint8
 	FractionOfParent
 };
 
-UCLASS()
-class RUNTIMEEDITOR_API USplitterSlot : public UPanelSlot
+USTRUCT(BlueprintType, BlueprintAble)
+struct FColumnSizeData
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FOnGetSizeValue OnGetSlotSizeValue;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class RUNTIMEEDITOR_API USplitterSlot : public UPanelSlot
+{
+	GENERATED_UCLASS_BODY()
+
 public:
+
 	USplitterSlot();
 
 	/** How much space this slot should occupy in the direction of the panel. */
@@ -66,6 +76,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Layout|Splitter Slot", meta = (DisplayAfter = "Padding"))
 	ERealSizeRule SizeRule;
 
+	/** Called when the menu content is requested to allow a more customized handling over what to display */
+	UPROPERTY(EditAnywhere, Category = "Layout|Splitter Slot", meta = (IsBindableEvent = "True"))
+	FOnGetSizeValue OnGetSlotSizeValue;
+
+	UFUNCTION(BlueprintCallable)
+	void SetSlotGetSizeEvent(FOnGetSizeValue InEvent) { OnGetSlotSizeValue = InEvent; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Button|Event")
 	FOnSplitterSlotResized OnSplitterSlotResized;
 
 	// UPanelSlot interface
@@ -79,6 +97,7 @@ public:
 
 protected:
 	void HandleSlotResized(float NewSize);
+	float HandleGetSlotValue();
 
 private:
 	SSplitter::FSlot* Slot;
