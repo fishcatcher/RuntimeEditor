@@ -33,6 +33,12 @@ USplitterSlot::USplitterSlot() :
 	SizeValue = 1;
 }
 
+USplitterSlot::USplitterSlot(const FObjectInitializer&) :
+	USplitterSlot()
+{
+
+}
+
 void USplitterSlot::SynchronizeProperties()
 {
 	if (Slot)
@@ -52,7 +58,7 @@ void USplitterSlot::ReleaseSlateResources(bool bReleaseChildren)
 void USplitterSlot::BuildSlot(TSharedRef<SSplitter> InSplitter)
 {
 	Slot = &InSplitter->AddSlot()
-		.Value(SizeValue)
+		.Value(BIND_UOBJECT_ATTRIBUTE(float, HandleGetSlotValue))
 		.SizeRule(static_cast<SSplitter::ESizeRule>(SizeRule))
 		.OnSlotResized(BIND_UOBJECT_DELEGATE(SSplitter::FOnSlotResized, HandleSlotResized))
 		[
@@ -62,7 +68,16 @@ void USplitterSlot::BuildSlot(TSharedRef<SSplitter> InSplitter)
 
 void USplitterSlot::HandleSlotResized(float NewSize)
 {
-	//GLog->Log(FString::SanitizeFloat(NewSize));
 	OnSplitterSlotResized.Broadcast(NewSize);
-	Slot->SizeValue = NewSize;
+	SizeValue = NewSize;
 }
+
+float USplitterSlot::HandleGetSlotValue()
+{
+	if (OnGetSlotSizeValue.IsBound())
+	{
+		return OnGetSlotSizeValue.Execute();
+	}
+	return SizeValue;
+}
+
